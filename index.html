@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:title" content="分子てつなぎパズル">
+<meta property="og:description" content="分子式から原子の「手」をつないで構造式を組み立てる化学パズル">
+<meta property="og:image" content="https://molecule.meetupsensei.com/ogp.jpg">
+<meta property="og:url" content="https://molecule.meetupsensei.com/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<title>分子てつなぎパズル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#E9EDF1; --panel:#F8FAFB; --board:#F3F6F8; --ink:#18202B; --muted:#5A6573;
+  --line:#CCD4DC; --grid:#BAC4CE; --accent:#0E7A86; --accent-ink:#FFFFFF; --accent-soft:#D5EBED;
+  --good:#23865A; --good-soft:#DCEFE4; --warn:#B8621B; --warn-soft:#F5E6D7; --bond:#39414C;
+  --H:#FBFBFB; --Hs:#8B95A1; --Ht:#18202B;
+  --C:#2F343B; --Cs:#14171B; --Ct:#FFFFFF;
+  --N:#3B6BD6; --Ns:#23479E; --Nt:#FFFFFF;
+  --O:#DE4337; --Os:#A42A21; --Ot:#FFFFFF;
+  --Cl:#3AA457; --Cls:#237238; --Clt:#FFFFFF;
+  --S:#E6C21C; --Ss:#A98B0A; --St:#18202B;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1318; --panel:#171C23; --board:#12171D; --ink:#E4E9EF; --muted:#98A3AF;
+    --line:#29313B; --grid:#2E3844; --accent:#43B9C4; --accent-ink:#0B1A1C; --accent-soft:#163339;
+    --good:#56C68C; --good-soft:#173226; --warn:#E59C57; --warn-soft:#3A2A1B; --bond:#AEB7C2;
+    --H:#EEF1F4; --Hs:#EEF1F4; --C:#59606A; --Cs:#8C949E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1318; --panel:#171C23; --board:#12171D; --ink:#E4E9EF; --muted:#98A3AF;
+  --line:#29313B; --grid:#2E3844; --accent:#43B9C4; --accent-ink:#0B1A1C; --accent-soft:#163339;
+  --good:#56C68C; --good-soft:#173226; --warn:#E59C57; --warn-soft:#3A2A1B; --bond:#AEB7C2;
+  --H:#EEF1F4; --Hs:#EEF1F4; --C:#59606A; --Cs:#8C949E;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.7;padding-inline:16px;padding-block:0 32px}
+button{font:inherit;color:inherit}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+sub{font-size:.62em;vertical-align:-.28em;line-height:0}
+.wrap{max-width:1360px;margin-inline:auto}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding-block:18px 14px}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:26px;letter-spacing:.02em;margin:0;line-height:1.2}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+.top-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.progress{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.progress b{color:var(--ink);font-weight:600}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+
+.app{display:grid;grid-template-columns:230px minmax(0,1fr) 310px;gap:16px;align-items:start}
+
+.stages{display:flex;flex-direction:column;gap:18px;position:sticky;top:12px}
+.stage h2{font-family:var(--f-display);font-weight:400;font-size:14px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.stage h2 span{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stage p{margin:2px 0 8px;font-size:12px;color:var(--muted);line-height:1.5}
+.stage.adv h2{color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:3px 10px 3px 20px;cursor:pointer;font-family:var(--f-mono);font-weight:600;font-size:14px;line-height:1.6}
+.chip::before{content:"";position:absolute;left:7px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;border:1.5px solid var(--line)}
+.chip[data-st="solved"]::before{background:var(--good);border-color:var(--good)}
+.chip[data-st="seen"]::before{border-color:var(--warn)}
+.chip[aria-current="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chip:hover{border-color:var(--accent)}
+.legend-dots{display:flex;gap:12px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.legend-dots i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:1px;border:1.5px solid var(--good);background:var(--good)}
+.legend-dots i.s{background:transparent;border-color:var(--warn)}
+
+.play{display:flex;flex-direction:column;gap:12px;min-width:0}
+.prompt{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0}
+.formula-row{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.formula{font-family:var(--f-mono);font-weight:700;font-size:52px;line-height:1.05;letter-spacing:-.01em}
+.mname{font-size:18px;font-weight:700}
+.mname small{display:block;font-size:12px;font-weight:500;color:var(--muted)}
+.tray{display:flex;flex-wrap:wrap;gap:6px}
+.tchip{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px 3px 4px;font-size:13px}
+.tchip svg{width:26px;height:26px;flex:none}
+.tchip b{font-family:var(--f-mono);font-weight:600}
+.tchip span{color:var(--muted)}
+
+.board-wrap{position:relative;background:var(--board);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.board-wrap.done{border-color:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+#board{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:14px;font-weight:500}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.status{display:flex;align-items:center;gap:10px;font-size:14px;min-height:40px;padding:8px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.status .pill{font-family:var(--f-mono);font-size:12px;font-weight:600;padding:1px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.status.warn{background:var(--warn-soft);border-color:transparent}
+.status.warn .pill{background:var(--warn);color:var(--panel)}
+.status.good{background:var(--good-soft);border-color:transparent}
+.status.good .pill{background:var(--good);color:var(--panel)}
+
+.side{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card h3{font-size:13px;letter-spacing:.06em;color:var(--muted);margin:0 0 6px;font-weight:700}
+.card p{margin:0 0 8px}
+.card p:last-child{margin-bottom:0}
+.guide ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.note-adv{font-size:13px;background:var(--warn-soft);border-radius:8px;padding:8px 10px;margin-top:10px}
+.hints ul{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
+.hints li{font-size:14px;padding-left:14px;position:relative}
+.hints li::before{content:"";position:absolute;left:0;top:.7em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.hints .empty{color:var(--muted);font-size:13px}
+.result{border-color:var(--good)}
+.result h3{color:var(--good)}
+.q{font-weight:700;margin-bottom:8px}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.opts button{border:1px solid var(--line);background:var(--board);border-radius:8px;padding:6px 0;cursor:pointer;font-family:var(--f-mono);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.opts button:hover:not(:disabled){border-color:var(--accent)}
+.opts button.ok{background:var(--good);border-color:var(--good);color:var(--panel)}
+.opts button.ng{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.feedback{font-size:14px;margin:0 0 8px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 10px;font-size:14px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;font-weight:500}
+.facts dd .mono{font-family:var(--f-mono);font-weight:600}
+.explain{font-size:14px}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.selring{transform-box:fill-box;transform-origin:center;animation:spin 6s linear infinite}
+@media (prefers-reduced-motion: reduce){.selring{animation:none}}
+
+@media (max-width:1100px){
+  .app{grid-template-columns:210px minmax(0,1fr)}
+  .side{grid-column:2}
+}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{grid-column:auto}
+  .stages{position:static;flex-direction:row;overflow-x:auto;gap:14px;padding-bottom:6px}
+  .stage{flex:none;width:200px}
+  .formula{font-size:40px}
+  .brand h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>分子てつなぎパズル</h1>
+      <p>分子式から、原子の「手」をつないで構造式をつくろう</p>
+    </div>
+    <div class="top-right">
+      <div class="progress" id="progress"></div>
+      <div class="seg" role="group" aria-label="表示モード">
+        <button id="mode-bond" type="button" aria-pressed="true">結合線モード</button>
+        <button id="mode-electron" type="button" aria-pressed="false">電子式モード</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="app">
+    <nav class="stages" id="stages" aria-label="ステージ"></nav>
+
+    <main class="play">
+      <div class="prompt">
+        <div>
+          <p class="eyebrow" id="eyebrow"></p>
+          <div class="formula-row">
+            <div class="formula" id="formula"></div>
+            <div class="mname" id="mname"></div>
+          </div>
+        </div>
+        <div class="tray" id="tray" aria-label="使う原子"></div>
+      </div>
+
+      <div class="board-wrap" id="board-wrap">
+        <svg id="board" viewBox="0 0 600 400" role="application" aria-label="組み立て盤"></svg>
+      </div>
+
+      <div class="tools">
+        <button class="btn" id="btn-reset" type="button">結合をすべて外す</button>
+        <button class="btn" id="btn-shuffle" type="button">原子を並べ直す</button>
+        <span class="spacer"></span>
+        <button class="btn" id="btn-hint" type="button">ヒントを見る</button>
+        <button class="btn quiet" id="btn-answer" type="button">答えを見る</button>
+      </div>
+
+      <div class="status" id="status" aria-live="polite"></div>
+    </main>
+
+    <aside class="side">
+      <section class="card result" id="result" hidden></section>
+      <section class="card guide" id="guide"></section>
+      <section class="card hints" id="hints">
+        <h3>ヒント</h3>
+        <ul id="hint-list"></ul>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- 原子の種類 ---------- */
+// hands: 結合に使える手（価標）の数 / ve: 価電子の数
+const T = {
+  H:  {el:"H",  hands:1, ve:1, r:19},
+  C:  {el:"C",  hands:4, ve:4, r:24},
+  N:  {el:"N",  hands:3, ve:5, r:24},
+  O:  {el:"O",  hands:2, ve:6, r:24},
+  Cl: {el:"Cl", hands:1, ve:7, r:26},
+  S:  {el:"S",  hands:2, ve:6, r:26},
+  S4: {el:"S",  hands:4, ve:6, r:26, tag:"4価"},
+  S6: {el:"S",  hands:6, ve:6, r:26, tag:"6価"},
+  Np: {el:"N",  hands:4, ve:4, r:24, charge:"+"},
+  Om: {el:"O",  hands:1, ve:7, r:24, charge:"−"}
+};
+const typeName = t => T[t].el + (T[t].charge ? (T[t].charge==="+"?"⁺":"⁻") : "") + (T[t].tag ? "（"+T[t].tag+"）" : "");
+
+/* ---------- 分子データ ---------- */
+function M(o){
+  o.atoms = o.atoms.split(" ");
+  o.bonds = parseBonds(o.bonds);
+  if(o.alts) o.alts.forEach(a => a.bonds = parseBonds(a.bonds));
+  return o;
+}
+function parseBonds(s){
+  return s.split(" ").map(b => {
+    const m = b.match(/^(\d+)([-=#])(\d+)$/);
+    return [+m[1], +m[3], {"-":1,"=":2,"#":3}[m[2]]];
+  });
+}
+
+const MOLS = [
+  M({id:"h2", f:"H2", name:"水素", atoms:"H H", bonds:"0-1", pos:[[255,200],[345,200]],
+    shape:"直線形",
+    hints:["Hの手は1本だけ。2つのHが手を1本ずつ出し合えば完成。"],
+    note:"H–H の単結合が1本。H は電子2個に囲まれればヘリウムと同じ安定な形になる。"}),
+  M({id:"cl2", f:"Cl2", name:"塩素", atoms:"Cl Cl", bonds:"0-1", pos:[[250,200],[350,200]],
+    shape:"直線形",
+    hints:["Clの価電子は7個。あと1個でオクテット（8個）になるので、手は1本。"],
+    note:"Cl は価電子7個のうち1個だけを共有に使う。残り6個は非共有電子対3組になる。"}),
+  M({id:"hcl", f:"HCl", name:"塩化水素", atoms:"H Cl", bonds:"0-1", pos:[[255,200],[350,200]],
+    shape:"直線形",
+    hints:["HもClも手は1本。ちがう原子どうしでも手をつなげる。"],
+    note:"水に溶けると塩酸になる。H–Cl の単結合1本で、Cl に非共有電子対が3組残る。"}),
+  M({id:"o2", f:"O2", name:"酸素", atoms:"O O", bonds:"0=1", pos:[[255,200],[345,200]],
+    shape:"直線形",
+    hints:["Oの手は2本。1本だけつないでも、まだ手が余る。","同じ2つの原子の間を、もう一度タップしてみよう。"],
+    note:"O=O の二重結合。共有電子対を2組つくることで、どちらの O も電子8個に囲まれる。"}),
+  M({id:"n2", f:"N2", name:"窒素", atoms:"N N", bonds:"0#1", pos:[[255,200],[345,200]],
+    shape:"直線形",
+    hints:["Nの手は3本。2個のNの間を何本の線でつなげばよいか考えよう。"],
+    note:"N≡N の三重結合。とても強い結合なので、窒素は反応しにくい気体になる。空気の約78%を占める。"}),
+
+  M({id:"h2o", f:"H2O", name:"水", atoms:"O H H", bonds:"0-1 0-2", pos:[[300,170],[228,238],[372,238]],
+    shape:"折れ線形",
+    hints:["手がいちばん多い原子を中心に置くと考えやすい。","Hどうしをつなぐと、Oの手が余ってしまう。"],
+    note:"O が中心で H が2個。O に残る非共有電子対2組が H を押しやるので、実際の分子は折れ曲がっている。"}),
+  M({id:"nh3", f:"NH3", name:"アンモニア", atoms:"N H H H", bonds:"0-1 0-2 0-3", pos:[[300,160],[215,225],[300,265],[385,225]],
+    shape:"三角錐形",
+    hints:["Nの手は3本、Hは1本ずつ。中心はどれ？"],
+    note:"N が中心で3個の H と単結合。N に非共有電子対が1組残る。この電子対が H⁺ を受け取るとアンモニウムイオン NH₄⁺ になる。"}),
+  M({id:"ch4", f:"CH4", name:"メタン", atoms:"C H H H H", bonds:"0-1 0-2 0-3 0-4", pos:[[300,200],[300,110],[390,200],[300,290],[210,200]],
+    shape:"正四面体形",
+    hints:["Cの手は4本。有機物の骨組みはいつもCの4本の手から始まる。"],
+    note:"C の4本の手すべてに H がつく。C には非共有電子対がない。都市ガスの主成分。"}),
+  M({id:"h2s", f:"H2S", name:"硫化水素", atoms:"S H H", bonds:"0-1 0-2", pos:[[300,170],[228,238],[372,238]],
+    shape:"折れ線形",
+    hints:["SはOと同じ16族。価電子6個で、手は2本。","水 H₂O と同じ形になるはず。"],
+    note:"S は周期表で O の真下にあるので、水と同じつながり方をする。温泉のにおいのもと。"}),
+
+  M({id:"co2", f:"CO2", name:"二酸化炭素", atoms:"C O O", bonds:"0=1 0=2", pos:[[300,200],[205,200],[395,200]],
+    shape:"直線形",
+    hints:["Cの手は4本、Oは2本ずつ。","Cを真ん中に。Oとは何本ずつつなげば、手がすべて埋まる？"],
+    note:"O=C=O。C は左右の O と二重結合を1本ずつつくり、4本の手をすべて使う。"}),
+  M({id:"hcn", f:"HCN", name:"シアン化水素", atoms:"C H N", bonds:"0-1 0#2", pos:[[295,200],[200,200],[390,200]],
+    shape:"直線形",
+    hints:["手の数は H=1、C=4、N=3。中心になれるのはどれ？","Hとつないだあと、Cに残る手は3本。Nの手も3本。"],
+    note:"H–C≡N。C は H と単結合、N と三重結合で4本の手を使う。猛毒の物質。"}),
+  M({id:"c2h4", f:"C2H4", name:"エチレン", atoms:"C C H H H H", bonds:"0=1 0-2 0-3 1-4 1-5", pos:[[255,200],[345,200],[195,140],[195,260],[405,140],[405,260]],
+    shape:"平面形",
+    hints:["まずCどうしをつなぎ、それぞれにHを2個ずつつけてみよう。","Cの手が1本ずつ余ったら、それをどう使う？"],
+    note:"H₂C=CH₂。C=C の二重結合をもつ。ポリエチレンの原料で、果物を熟させる植物ホルモンでもある。"}),
+  M({id:"c2h2", f:"C2H2", name:"アセチレン", atoms:"C C H H", bonds:"0#1 0-2 1-3", pos:[[255,200],[345,200],[165,200],[435,200]],
+    shape:"直線形",
+    hints:["Hは2個しかない。1個のCに1個ずつ。","Cに残った3本の手どうしを、すべてつなごう。"],
+    note:"H–C≡C–H。C≡C の三重結合をもつ。燃やすと高温になるので金属の溶接に使われる。"}),
+
+  M({id:"ch3oh", f:"CH4O", sub:"CH3OH", name:"メタノール", atoms:"C O H H H H", bonds:"0-1 0-2 0-3 0-4 1-5", pos:[[255,200],[345,200],[255,110],[165,200],[255,290],[415,150]],
+    hints:["CとOをつなぎ、残りの手にHをつけていこう。","示性式は CH₃OH。「OH」はOとHがつながっているという意味。"],
+    note:"CH₃–OH。C に H が3個、O に H が1個つく。この –OH をヒドロキシ基という。"}),
+  M({id:"hcho", f:"CH2O", sub:"HCHO", name:"ホルムアルデヒド", atoms:"C O H H", bonds:"0=1 0-2 0-3", pos:[[300,225],[300,130],[222,280],[378,280]],
+    shape:"平面三角形",
+    hints:["HはOにつかず、2個ともCにつく。","Cの手が2本、Oの手が2本残ったら？"],
+    note:"H₂C=O。C=O の二重結合（カルボニル基）をもつ。水溶液はホルマリンと呼ばれる。"}),
+  M({id:"c2h5oh", f:"C2H6O", sub:"C2H5OH", name:"エタノール", atoms:"C C O H H H H H H", bonds:"0-1 1-2 0-3 0-4 0-5 1-6 1-7 2-8",
+    pos:[[210,200],[300,200],[390,200],[210,110],[120,200],[210,290],[300,110],[300,290],[460,150]],
+    alts:[{name:"ジメチルエーテル", bonds:"0-2 1-2 0-3 0-4 0-5 1-6 1-7 1-8",
+      why:"C–O–C のつながりはジメチルエーテル。エタノールは C–C–O–H の順につながる。"}],
+    hints:["示性式は C₂H₅OH。Cが2個並び、その端に –OH がつく。","C–C–O の順につないでから、Hを配っていこう。"],
+    note:"CH₃–CH₂–OH。お酒に含まれるアルコール。同じ分子式 C₂H₆O でも、つながり方がちがうとジメチルエーテルという別の物質になる（異性体）。"}),
+  M({id:"ch3cooh", f:"C2H4O2", sub:"CH3COOH", name:"酢酸", atoms:"C C O O H H H H", bonds:"0-1 1=2 1-3 3-7 0-4 0-5 0-6",
+    pos:[[210,215],[300,215],[300,125],[390,215],[210,125],[120,215],[210,305],[460,165]],
+    alts:[{name:"ギ酸メチル", bonds:"1=2 1-3 3-0 1-7 0-4 0-5 0-6",
+      why:"C–O–C のつながりはギ酸メチル（HCOOCH₃）。酢酸は2個のCが直接つながる。"}],
+    hints:["示性式は CH₃COOH。CH₃– のCと、–COOH のCが直接つながる。","–COOH の C には、O が2個つく。1個は二重結合、もう1個は H をもつ。"],
+    note:"CH₃–C(=O)–OH。–COOH をカルボキシ基といい、水に溶けると H⁺ を出すので酸性を示す。お酢の成分。"}),
+
+  M({id:"so2", f:"SO2", name:"二酸化硫黄", adv:true, atoms:"S4 O O", bonds:"0=1 0=2", pos:[[300,175],[215,230],[385,230]],
+    shape:"折れ線形",
+    hints:["この問題のSは手が4本（4価）。","Oは手2本。Sと二重結合を1本ずつつくると？"],
+    note:"O=S=O。S は価電子6個のうち4個を結合に使い、残り2個が非共有電子対1組になる。",
+    exc:"S は第3周期の元素なので、教科書では O より多くの手を使う書き方をする。オクテット則だけでは説明しきれない例。"}),
+  M({id:"h2so4", f:"H2SO4", name:"硫酸", adv:true, atoms:"S6 O O O O H H", bonds:"0=1 0=2 0-3 0-4 3-5 4-6",
+    pos:[[300,200],[300,110],[300,290],[210,200],[390,200],[140,150],[460,150]],
+    hints:["この問題のSは手が6本（6価）。価電子6個をすべて結合に使う。","HはSではなくOにつく。H–O–S の形が2か所。","残ったOは、Sと二重結合でつながる。"],
+    note:"S のまわりに O が4個。そのうち2個は S=O の二重結合、2個は –OH として H をもつ。",
+    exc:"S の手を6本とする書き方は、高校の教科書で使われる構造式に合わせたもの。S のまわりの電子は12個になり、オクテット則の例外になる。"}),
+  M({id:"hno3", f:"HNO3", name:"硝酸", adv:true, atoms:"Np O O Om H", bonds:"0-1 0=2 0-3 1-4",
+    pos:[[320,200],[230,200],[320,110],[400,250],[160,150]],
+    hints:["N⁺ は手4本、O⁻ は手1本、ふつうの O は手2本。","HはふつうのOにつき、H–O–N の形になる。","N⁺ の残りの手3本を、O と O⁻ で埋めよう。"],
+    note:"H–O–N(=O)–O⁻ に、N⁺ の電荷がつく形。分子全体では電荷が打ち消し合って0になる。",
+    exc:"N は手3本のままでは3個の O をつなぎきれない。N の非共有電子対を O に差し出す「配位結合」がある。ここではそれを、電子を1個失った N⁺（手4本）と、電子を1個もらった O⁻（手1本）で表している。"})
+];
+const BY = Object.fromEntries(MOLS.map(m => [m.id, m]));
+
+const STAGES = [
+  {name:"二原子分子", desc:"原子2個でできた分子。単結合・二重結合・三重結合", ids:["h2","cl2","hcl","o2","n2"]},
+  {name:"水素との化合物", desc:"中心の原子に H がいくつつくか", ids:["h2o","nh3","ch4","h2s"]},
+  {name:"二重結合と三重結合", desc:"手が余ったら、同じ相手ともう一度つなぐ", ids:["co2","hcn","c2h4","c2h2"]},
+  {name:"身近な有機物", desc:"C の骨組みに O と H をつける", ids:["ch3oh","hcho","c2h5oh","ch3cooh"]},
+  {name:"上級：例外に挑戦", desc:"手の数がふだんと変わる原子を使う。結合線モードのみ", ids:["so2","h2so4","hno3"], adv:true}
+];
+const stageOf = id => STAGES.findIndex(s => s.ids.includes(id));
+
+/* ---------- 保存 ---------- */
+const KEY = "mol-tetsunagi-v1";
+let store = {progress:{}, mode:"bond", last:null};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if(s) store = Object.assign(store, s); } catch(e){}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} }
+
+/* ---------- 状態 ---------- */
+let mol, atoms = [], bonds = {}, sel = null, locked = false, hintLevel = 0, quiz = null, flash = null;
+let mode = store.mode === "electron" ? "electron" : "bond";
+
+const $ = id => document.getElementById(id);
+const svg = $("board");
+const NS = "http://www.w3.org/2000/svg";
+const key = (a,b) => a < b ? a+"-"+b : b+"-"+a;
+const fmt = s => s.replace(/(\d+)/g, "<sub>$1</sub>");
+const effMode = () => (mol && mol.adv) ? "bond" : mode;
+
+function bondSum(i){
+  let s = 0;
+  for(const k in bonds){ const [a,b] = k.split("-").map(Number); if(a===i||b===i) s += bonds[k]; }
+  return s;
+}
+const free = i => T[atoms[i].t].hands - bondSum(i);
+function neighbors(i){
+  const out = [];
+  for(const k in bonds){ const [a,b] = k.split("-").map(Number); if(a===i) out.push(b); else if(b===i) out.push(a); }
+  return out;
+}
+
+/* ---------- 読み込み ---------- */
+function load(id){
+  mol = BY[id];
+  store.last = id; save();
+  atoms = mol.atoms.map(t => ({t, x:0, y:0}));
+  bonds = {}; sel = null; locked = false; hintLevel = 0; quiz = null; flash = null;
+  scatter();
+  renderAll();
+}
+
+function scatter(){
+  const n = atoms.length;
+  const order = atoms.map((_,i)=>i).sort(() => Math.random() - .5);
+  const rx = Math.min(200, 70 + n*18), ry = Math.min(135, 50 + n*12);
+  const start = Math.random() * Math.PI * 2;
+  order.forEach((idx, k) => {
+    const a = start + k * 2 * Math.PI / n;
+    atoms[idx].x = clamp(300 + rx*Math.cos(a), 45, 555);
+    atoms[idx].y = clamp(200 + ry*Math.sin(a), 45, 355);
+  });
+}
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+/* ---------- 構造の比較（Weisfeiler–Lehman 法による指紋） ---------- */
+function hash(s){ let h = 2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h>>>0).toString(36); }
+function fingerprint(types, blist){
+  const n = types.length, adj = types.map(() => []);
+  blist.forEach(([a,b,o]) => { adj[a].push([b,o]); adj[b].push([a,o]); });
+  let lab = types.slice();
+  for(let it=0; it<n; it++){
+    lab = lab.map((l,i) => hash(l + "|" + adj[i].map(([j,o]) => o + lab[j]).sort().join(",")));
+  }
+  return lab.slice().sort().join(";");
+}
+const currentBondList = () => Object.entries(bonds).map(([k,o]) => { const [a,b] = k.split("-").map(Number); return [a,b,o]; });
+
+function connected(){
+  const seen = new Set([0]), st = [0];
+  while(st.length){ const i = st.pop(); neighbors(i).forEach(j => { if(!seen.has(j)){ seen.add(j); st.push(j); } }); }
+  return seen.size === atoms.length;
+}
+
+function counts(types, blist){
+  const sum = types.map(() => 0); let shared = 0;
+  blist.forEach(([a,b,o]) => { sum[a]+=o; sum[b]+=o; shared += o; });
+  const lone = types.reduce((s,t,i) => s + (T[t].ve - sum[i]) / 2, 0);
+  return {shared, lone};
+}
+
+/* ---------- 操作 ---------- */
+function tapAtom(i){
+  if(locked){ return; }
+  if(sel === null){ sel = i; flash = null; render(); return; }
+  if(sel === i){ sel = null; render(); return; }
+  const a = sel; sel = null;
+  changeBond(a, i);
+}
+function changeBond(a, b){
+  if(locked) return;
+  const k = key(a,b), o = bonds[k] || 0;
+  flash = null;
+  if(o === 0){
+    if(free(a) > 0 && free(b) > 0){ bonds[k] = 1; }
+    else {
+      const full = free(a) <= 0 ? a : b;
+      flash = {cls:"warn", pill:"手が足りない", text: typeName(atoms[full].t) + " の手はもう空いていません。ほかの結合を外すか、別の原子を選ぼう。"};
+    }
+  } else if(o < 3 && free(a) > 0 && free(b) > 0){
+    bonds[k] = o + 1;
+  } else {
+    delete bonds[k];
+    flash = {cls:"", pill:"外した", text:"この結合を外しました。"};
+  }
+  evaluate();
+}
+
+function evaluate(){
+  const remain = atoms.reduce((s,_,i) => s + Math.max(0, free(i)), 0);
+  if(remain === 0 && !connected()){
+    flash = {cls:"warn", pill:"分かれている", text:"手はすべて埋まったけれど、分子が2つ以上に分かれています。1つの分子になるようにつなぎ直そう。"};
+  } else if(remain === 0){
+    const fp = fingerprint(atoms.map(a=>a.t), currentBondList());
+    if(fp === fingerprint(mol.atoms, mol.bonds)){
+      success(false); return;
+    }
+    const alt = (mol.alts || []).find(al => fingerprint(mol.atoms, al.bonds) === fp);
+    flash = alt
+      ? {cls:"warn", pill:"別の物質", text:"ルールは守れています。でもこれは「" + alt.name + "」の構造。" + alt.why}
+      : {cls:"warn", pill:"別の物質", text:"手はすべて埋まりましたが、" + mol.name + "とはつながり方がちがいます。ヒントを見て、どの原子どうしがつながるか考えよう。"};
+  }
+  renderAll();
+}
+
+function success(seen){
+  locked = true; sel = null;
+  const prev = store.progress[mol.id];
+  if(!seen) store.progress[mol.id] = "solved";
+  else if(prev !== "solved") store.progress[mol.id] = "seen";
+  save();
+  const c = counts(mol.atoms, mol.bonds);
+  flash = seen
+    ? {cls:"", pill:"答え", text:"これが" + mol.name + "の構造式。次は自分の力で組み立ててみよう。"}
+    : {cls:"good", pill:"完成！", text: mol.name + "ができました。" + (effMode()==="electron" ? "すべての原子が安定な電子配置になっています。" : "すべての原子の手がつながりました。")};
+  quiz = {step: seen ? 2 : 0, seen, c, picked:[null,null]};
+  renderAll();
+}
+
+function showAnswer(){
+  atoms = mol.atoms.map((t,i) => ({t, x:mol.pos[i][0], y:mol.pos[i][1]}));
+  bonds = {};
+  mol.bonds.forEach(([a,b,o]) => bonds[key(a,b)] = o);
+  success(true);
+}
+
+/* ---------- 描画 ---------- */
+function renderAll(){ renderStages(); renderPrompt(); render(); renderSide(); }
+
+function renderStages(){
+  const total = MOLS.length, done = MOLS.filter(m => store.progress[m.id]==="solved").length;
+  $("progress").innerHTML = "完成 <b>" + done + "</b> / " + total;
+  const html = STAGES.map((s, si) => {
+    const sd = s.ids.filter(id => store.progress[id]==="solved").length;
+    return '<section class="stage' + (s.adv?' adv':'') + '"><h2>' + s.name + '<span>' + sd + '/' + s.ids.length + '</span></h2><p>' + s.desc + '</p><div class="chips">' +
+      s.ids.map(id => '<button type="button" class="chip" data-mol="' + id + '" data-st="' + (store.progress[id]||"") + '" aria-current="' + (mol && mol.id===id) + '" title="' + BY[id].name + '">' + fmt(BY[id].f) + '</button>').join("") +
+      '</div></section>';
+  }).join("");
+  $("stages").innerHTML = html + '<div class="legend-dots"><span><i></i>完成</span><span><i class="s"></i>答えを見た</span></div>';
+}
+
+function renderPrompt(){
+  const si = stageOf(mol.id);
+  $("eyebrow").textContent = (STAGES[si].adv ? "上級" : "ステージ " + (si+1)) + " · " + STAGES[si].name;
+  $("formula").innerHTML = fmt(mol.f);
+  $("mname").innerHTML = mol.name + (mol.sub ? '<small>示性式 ' + fmt(mol.sub) + '</small>' : '<small>この分子式の構造式をつくろう</small>');
+  const countsBy = {};
+  mol.atoms.forEach(t => countsBy[t] = (countsBy[t]||0) + 1);
+  const em = effMode();
+  $("tray").innerHTML = Object.entries(countsBy).map(([t,n]) =>
+    '<div class="tchip">' + miniAtom(t) + '<b>' + typeName(t) + ' ×' + n + '</b><span>' +
+    (em==="electron" ? "価電子" + T[t].ve + "個" : "手" + T[t].hands + "本") + '</span></div>').join("");
+  $("mode-bond").setAttribute("aria-pressed", em==="bond");
+  $("mode-electron").setAttribute("aria-pressed", em==="electron");
+  $("mode-electron").disabled = !!mol.adv;
+  $("mode-electron").title = mol.adv ? "上級ステージは結合線モードで遊びます" : "";
+}
+
+function miniAtom(t){
+  const e = T[t].el;
+  return '<svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" style="fill:var(--' + e + ');stroke:var(--' + e + 's)" stroke-width="1.2"/><text x="13" y="17" text-anchor="middle" style="fill:var(--' + e + 't);font:600 ' + (e.length>1?9:11) + 'px var(--f-mono)">' + e + '</text></svg>';
+}
+
+// 結合方向を避けて、手や電子を置く角度を選ぶ
+function pickAngles(i, k){
+  const occ = neighbors(i).map(j => Math.atan2(atoms[j].y - atoms[i].y, atoms[j].x - atoms[i].x));
+  const out = [];
+  if(k === 0) return out;
+  if(occ.length === 0){
+    for(let m=0;m<k;m++) out.push(-Math.PI/2 + m*2*Math.PI/k);
+    return out;
+  }
+  const cand = []; for(let d=0; d<360; d+=15) cand.push(d*Math.PI/180);
+  const dist = (a,b) => { let d = Math.abs(a-b) % (2*Math.PI); return d > Math.PI ? 2*Math.PI - d : d; };
+  for(let m=0;m<k;m++){
+    let best = cand[0], bv = -1;
+    cand.forEach(c => {
+      const v = Math.min(...occ.concat(out).map(o => dist(c,o)));
+      if(v > bv + 1e-6){ bv = v; best = c; }
+    });
+    out.push(best);
+  }
+  return out;
+}
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const a in attrs) e.setAttribute(a, attrs[a]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+function render(){
+  const focusIdx = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.atom : undefined;
+  svg.textContent = "";
+  const em = effMode();
+  const defs = el("defs", {}, svg);
+  const pat = el("pattern", {id:"dots", width:"20", height:"20", patternUnits:"userSpaceOnUse"}, defs);
+  el("circle", {cx:"10", cy:"10", r:"1.2", style:"fill:var(--grid)"}, pat);
+  const shine = el("radialGradient", {id:"shine", cx:"35%", cy:"30%", r:"65%"}, defs);
+  el("stop", {offset:"0", "stop-color":"#fff", "stop-opacity":".55"}, shine);
+  el("stop", {offset:".55", "stop-color":"#fff", "stop-opacity":"0"}, shine);
+  el("rect", {x:"0", y:"0", width:"600", height:"400", fill:"url(#dots)"}, svg);
+
+  const gB = el("g", {}, svg), gH = el("g", {}, svg), gA = el("g", {}, svg);
+
+  // 結合
+  for(const k in bonds){
+    const [a,b] = k.split("-").map(Number), o = bonds[k];
+    const A = atoms[a], B = atoms[b];
+    const dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx,dy) || 1;
+    const ux = dx/len, uy = dy/len, px = -uy, py = ux;
+    if(em === "bond"){
+      for(let m=0;m<o;m++){
+        const off = (m - (o-1)/2) * 8;
+        el("line", {x1:A.x+px*off, y1:A.y+py*off, x2:B.x+px*off, y2:B.y+py*off, style:"stroke:var(--bond)", "stroke-width":"4.5", "stroke-linecap":"round"}, gB);
+      }
+    } else {
+      el("line", {x1:A.x, y1:A.y, x2:B.x, y2:B.y, style:"stroke:var(--grid)", "stroke-width":"2", "stroke-dasharray":"2 5"}, gB);
+      const mx = (A.x+B.x)/2, my = (A.y+B.y)/2;
+      for(let m=0;m<o;m++){
+        const off = (m - (o-1)/2) * 11;
+        [-4.5, 4.5].forEach(s => el("circle", {cx:mx+px*off+ux*s, cy:my+py*off+uy*s, r:"3.3", style:"fill:var(--ink)"}, gB));
+      }
+    }
+    el("line", {x1:A.x, y1:A.y, x2:B.x, y2:B.y, stroke:"transparent", "stroke-width":"24", "data-bond":k, style:"cursor:pointer", "pointer-events":"stroke"}, gB);
+  }
+
+  // 手（価標）または電子
+  atoms.forEach((A, i) => {
+    const t = T[A.t], f = Math.max(0, free(i));
+    if(em === "bond"){
+      pickAngles(i, f).forEach(ang => {
+        const c = Math.cos(ang), s = Math.sin(ang);
+        el("line", {x1:A.x+c*(t.r+1), y1:A.y+s*(t.r+1), x2:A.x+c*(t.r+13), y2:A.y+s*(t.r+13), style:"stroke:var(--accent)", "stroke-width":"3.5", "stroke-linecap":"round"}, gH);
+        el("circle", {cx:A.x+c*(t.r+15), cy:A.y+s*(t.r+15), r:"3.5", style:"fill:var(--accent)"}, gH);
+      });
+    } else {
+      const bs = bondSum(i);
+      const pairs = Math.max(0, Math.round((t.ve - bs - f) / 2));
+      const items = Array(pairs).fill(2).concat(Array(f).fill(1));
+      pickAngles(i, items.length).forEach((ang, m) => {
+        const c = Math.cos(ang), s = Math.sin(ang), R = t.r + 11;
+        if(items[m] === 2){
+          [-4.5, 4.5].forEach(d => el("circle", {cx:A.x+c*R - s*d, cy:A.y+s*R + c*d, r:"3.3", style:"fill:var(--ink)"}, gH));
+        } else {
+          el("circle", {cx:A.x+c*R, cy:A.y+s*R, r:"4.6", style:"fill:var(--accent)"}, gH);
+        }
+      });
+    }
+  });
+
+  // 原子
+  atoms.forEach((A, i) => {
+    const t = T[A.t], e = t.el;
+    const g = el("g", {"data-atom":i, tabindex:"0", role:"button", "aria-label": typeName(A.t) + "（残りの手" + Math.max(0,free(i)) + "本）", style:"cursor:grab;outline:none"}, gA);
+    const full = free(i) === 0;
+    if(em === "electron" && full){
+      el("circle", {cx:A.x, cy:A.y, r:t.r+20, fill:"none", style:"stroke:var(--good)", "stroke-width":"1.5", "stroke-dasharray":"3 4", opacity:".8"}, g);
+    }
+    if(sel === i){
+      el("circle", {class:"selring", cx:A.x, cy:A.y, r:t.r+7, fill:"none", style:"stroke:var(--accent)", "stroke-width":"3", "stroke-dasharray":"7 5"}, g);
+    }
+    el("circle", {cx:A.x, cy:A.y, r:t.r, style:"fill:var(--"+e+");stroke:var(--"+e+"s)", "stroke-width":"1.5"}, g);
+    el("circle", {cx:A.x, cy:A.y, r:t.r, fill:"url(#shine)", "pointer-events":"none"}, g);
+    const tx = el("text", {x:A.x, y:A.y + (t.tag ? 2 : 6), "text-anchor":"middle", style:"fill:var(--"+e+"t);font:600 "+(e.length>1?15:18)+"px var(--f-mono);pointer-events:none"}, g);
+    tx.textContent = e;
+    if(t.tag){
+      const tg = el("text", {x:A.x, y:A.y+15, "text-anchor":"middle", style:"fill:var(--"+e+"t);font:500 9px var(--f-body);pointer-events:none"}, g);
+      tg.textContent = t.tag;
+    }
+    if(t.charge){
+      const cx = A.x + t.r*0.78, cy = A.y - t.r*0.78;
+      el("circle", {cx, cy, r:"9", style:"fill:var(--panel);stroke:var(--ink)", "stroke-width":"1.2", "pointer-events":"none"}, g);
+      const ct = el("text", {x:cx, y:cy+4.5, "text-anchor":"middle", style:"fill:var(--ink);font:700 13px var(--f-mono);pointer-events:none"}, g);
+      ct.textContent = t.charge;
+    }
+  });
+
+  if(focusIdx !== undefined){
+    const f = svg.querySelector('[data-atom="' + focusIdx + '"]');
+    if(f) f.focus({preventScroll:true});
+  }
+
+  $("board-wrap").classList.toggle("done", locked && !!quiz && !quiz.seen);
+  renderStatus();
+}
+
+function renderStatus(){
+  const st = $("status"), em = effMode();
+  const remain = atoms.reduce((s,_,i) => s + Math.max(0, free(i)), 0);
+  let cls = "", pill, text;
+  if(flash){ cls = flash.cls; pill = flash.pill; text = flash.text; }
+  else if(sel !== null){
+    pill = typeName(atoms[sel].t) + " を選択中";
+    text = "つなぎたい相手の原子をタップ。もう一度同じ原子をタップすると選択を解除。";
+  } else {
+    pill = em === "electron" ? "不対電子 残り" + remain + "個" : "残りの手 " + remain + "本";
+    text = Object.keys(bonds).length === 0
+      ? "原子をタップして選び、つなぎたい相手の原子をタップしよう。"
+      : "結合（線）をタップすると、二重結合 → 三重結合 → 外す、の順に変わる。";
+  }
+  st.className = "status" + (cls ? " " + cls : "");
+  st.innerHTML = '<span class="pill">' + pill + '</span><span>' + text + '</span>';
+  $("btn-reset").disabled = locked;
+  $("btn-shuffle").disabled = false;
+  $("btn-hint").disabled = locked || hintLevel >= hintList().length;
+  $("btn-answer").disabled = locked;
+}
+
+function hintList(){
+  const uniq = [...new Set(mol.atoms)];
+  const first = "手の数：" + uniq.map(t => typeName(t) + "=" + T[t].hands + "本").join("、") + "。すべての手が1本も余らずにつながれば完成。";
+  return [first].concat(mol.hints);
+}
+
+function renderSide(){
+  const em = effMode();
+  $("guide").innerHTML = '<h3>' + (em === "electron" ? "電子式モードの遊び方" : "結合線モードの遊び方") + '</h3>' +
+    (em === "electron"
+      ? '<ol><li>原子のまわりの点は最外殻電子。<b style="color:var(--accent)">色つきの点</b>は相手のいない不対電子。</li><li>原子をタップ → 相手の原子をタップすると、不対電子を1個ずつ出し合って共有電子対（黒い点2個）ができる。</li><li>H は電子2個、ほかの原子は電子8個に囲まれると点線の輪がつく。全員そろえば完成（オクテット則）。</li></ol>'
+      : '<ol><li>原子から出ている短い<b style="color:var(--accent)">「手」</b>が、結合に使える価標の数。</li><li>原子をタップ → 相手の原子をタップで、線（単結合）がつながる。</li><li>線をタップすると、二重結合 → 三重結合 → 外す、と変わる。原子はドラッグで動かせる。</li><li>すべての手が埋まって1つの分子になれば完成。</li></ol>') +
+    (mol.adv ? '<div class="note-adv">上級ステージは、手の数がふだんと変わる原子を使うため、結合線モードで遊びます。原子に書かれた「4価」「6価」や電荷の記号に注目しよう。</div>' : '');
+
+  const hs = hintList().slice(0, hintLevel);
+  $("hint-list").innerHTML = hs.length ? hs.map(h => '<li>' + h + '</li>').join("") : '<li class="empty" style="padding-left:0">行き詰まったら「ヒントを見る」を押そう。' + hintList().length + '段階あります。</li>';
+
+  renderResult();
+}
+
+function options(c){
+  const set = new Set([c]);
+  [c+1, c-1, c+2, c-2, c+3].forEach(v => { if(set.size < 4 && v >= 0) set.add(v); });
+  return [...set].sort((a,b) => a-b);
+}
+
+function renderResult(){
+  const box = $("result");
+  if(!quiz){ box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  const c = quiz.c;
+  const qs = [
+    {q:"この分子の共有電子対は何組？", a:c.shared, tip:"結合の線1本が共有電子対1組。二重結合は2組、三重結合は3組と数える。"},
+    {q:"では、非共有電子対は何組？", a:c.lone, tip:"結合に使われずに原子に残った電子のペア。電子式モードで黒い点のペアを数えてみよう。"}
+  ];
+  let html = '<h3>' + (quiz.seen ? "解説" : "完成！ クイズ") + '</h3>';
+  [0,1].forEach(s => {
+    if(s > quiz.step || quiz.step === 2 && quiz.picked[s] === null) return;
+    const q = qs[s], picked = quiz.picked[s];
+    html += '<p class="q">' + q.q + '</p><div class="opts">' + options(q.a).map(v => {
+      let cls = "";
+      if(picked !== null){ if(v === q.a) cls = "ok"; else if(v === picked) cls = "ng"; }
+      return '<button type="button" data-q="' + s + '" data-v="' + v + '" class="' + cls + '"' + (picked !== null ? " disabled" : "") + '>' + v + '</button>';
+    }).join("") + '</div>';
+    if(picked !== null) html += '<p class="feedback">' + (picked === q.a ? "正解！ " : "正解は " + q.a + " 組。") + q.tip + '</p>';
+  });
+  if(quiz.step === 2){
+    html += '<dl class="facts"><dt>分子式</dt><dd><span class="mono">' + fmt(mol.f) + '</span></dd>' +
+      (mol.sub ? '<dt>示性式</dt><dd><span class="mono">' + fmt(mol.sub) + '</span></dd>' : '') +
+      '<dt>共有電子対</dt><dd>' + c.shared + ' 組</dd><dt>非共有電子対</dt><dd>' + c.lone + ' 組</dd>' +
+      (mol.shape ? '<dt>実際の形</dt><dd>' + mol.shape + '</dd>' : '') + '</dl>' +
+      '<p class="explain">' + mol.note + '</p>' +
+      (mol.exc ? '<div class="note-adv">' + mol.exc + '</div>' : '') +
+      (mol.shape ? '<p class="explain" style="color:var(--muted);font-size:12px">盤面の構造式は平面に描いたもので、立体的な形は表していません。</p>' : '');
+    const nx = nextMol();
+    html += '<div class="tools" style="margin-top:10px">' +
+      (quiz.seen ? '<button class="btn" type="button" id="btn-retry">もう一度挑戦</button>' : '') +
+      (nx ? '<button class="btn primary" type="button" id="btn-next">次の分子 ' + fmt(nx.f) + '</button>' : '<span>全問クリア！</span>') + '</div>';
+  }
+  box.innerHTML = html;
+  box.querySelectorAll("[data-q]").forEach(b => b.addEventListener("click", () => {
+    const s = +b.dataset.q; quiz.picked[s] = +b.dataset.v;
+    quiz.step = s === 0 ? 1 : 2;
+    renderResult();
+  }));
+  const nb = $("btn-next"); if(nb) nb.addEventListener("click", () => load(nextMol().id));
+  const rb = $("btn-retry"); if(rb) rb.addEventListener("click", () => load(mol.id));
+}
+
+function nextMol(){
+  const i = MOLS.indexOf(mol);
+  for(let k=1; k<=MOLS.length; k++){
+    const m = MOLS[(i+k) % MOLS.length];
+    if(store.progress[m.id] !== "solved") return m;
+  }
+  return MOLS[(i+1) % MOLS.length] !== mol ? MOLS[(i+1) % MOLS.length] : null;
+}
+
+/* ---------- 入力 ---------- */
+function svgPoint(e){
+  const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+let drag = null;
+svg.addEventListener("pointerdown", e => {
+  const a = e.target.closest("[data-atom]"), b = e.target.closest("[data-bond]");
+  if(a){
+    const i = +a.dataset.atom, p = svgPoint(e);
+    drag = {i, sx:p.x, sy:p.y, ox:atoms[i].x, oy:atoms[i].y, moved:false, id:e.pointerId};
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  } else if(b){
+    const [x,y] = b.dataset.bond.split("-").map(Number);
+    sel = null; changeBond(x, y);
+  } else if(sel !== null){
+    sel = null; render();
+  }
+});
+svg.addEventListener("pointermove", e => {
+  if(!drag || e.pointerId !== drag.id) return;
+  const p = svgPoint(e);
+  if(!drag.moved && Math.hypot(p.x-drag.sx, p.y-drag.sy) > 6) drag.moved = true;
+  if(drag.moved){
+    atoms[drag.i].x = clamp(drag.ox + p.x - drag.sx, 30, 570);
+    atoms[drag.i].y = clamp(drag.oy + p.y - drag.sy, 30, 370);
+    render();
+  }
+});
+function endDrag(e){
+  if(!drag || e.pointerId !== drag.id) return;
+  const d = drag; drag = null;
+  if(!d.moved) tapAtom(d.i);
+}
+svg.addEventListener("pointerup", endDrag);
+svg.addEventListener("pointercancel", e => { drag = null; });
+svg.addEventListener("keydown", e => {
+  const a = e.target.closest && e.target.closest("[data-atom]");
+  if(a && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); tapAtom(+a.dataset.atom); }
+  if(e.key === "Escape" && sel !== null){ sel = null; render(); }
+});
+
+$("stages").addEventListener("click", e => {
+  const c = e.target.closest("[data-mol]"); if(c) load(c.dataset.mol);
+});
+$("mode-bond").addEventListener("click", () => { mode = "bond"; store.mode = mode; save(); renderAll(); });
+$("mode-electron").addEventListener("click", () => { if(mol.adv) return; mode = "electron"; store.mode = mode; save(); renderAll(); });
+$("btn-reset").addEventListener("click", () => { bonds = {}; sel = null; flash = null; renderAll(); });
+$("btn-shuffle").addEventListener("click", () => { scatter(); render(); });
+$("btn-hint").addEventListener("click", () => { hintLevel = Math.min(hintList().length, hintLevel + 1); renderSide(); renderStatus(); });
+$("btn-answer").addEventListener("click", showAnswer);
+
+/* ---------- 開始 ---------- */
+const startId = (store.last && BY[store.last]) ? store.last : (MOLS.find(m => store.progress[m.id] !== "solved") || MOLS[0]).id;
+load(startId);
+})();
+</script>
+</body>
+</html>
